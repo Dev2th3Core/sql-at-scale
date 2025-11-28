@@ -14,6 +14,7 @@ IF OBJECT_ID('dbo.Payments', 'U') IS NOT NULL DROP TABLE dbo.Payments;
 IF OBJECT_ID('dbo.OrderItems', 'U') IS NOT NULL DROP TABLE dbo.OrderItems;
 IF OBJECT_ID('dbo.Orders', 'U') IS NOT NULL DROP TABLE dbo.Orders;
 IF OBJECT_ID('dbo.Products', 'U') IS NOT NULL DROP TABLE dbo.Products;
+IF OBJECT_ID('dbo.ProductCategories', 'U') IS NOT NULL DROP TABLE dbo.ProductCategories;
 IF OBJECT_ID('dbo.Customers', 'U') IS NOT NULL DROP TABLE dbo.Customers;
 GO
 
@@ -32,17 +33,31 @@ CREATE TABLE dbo.Customers
 );
 GO
 
+-- ProductCategories (lookup / dimension table for product categories)
+CREATE TABLE dbo.ProductCategories
+(
+    CategoryId      INT IDENTITY(1,1) CONSTRAINT PK_ProductCategories PRIMARY KEY CLUSTERED,
+    CategoryName    NVARCHAR(100)     NOT NULL,
+
+    CONSTRAINT UQ_ProductCategories_CategoryName UNIQUE (CategoryName)
+);
+GO
+
 -- Products
 CREATE TABLE dbo.Products
 (
     ProductId       INT IDENTITY(1,1) CONSTRAINT PK_Products PRIMARY KEY CLUSTERED,
+    CategoryId      INT               NOT NULL,
     ProductName     NVARCHAR(200)     NOT NULL,
     Sku             NVARCHAR(50)      NOT NULL,
     UnitPrice       DECIMAL(18,2)     NOT NULL,
     IsActive        BIT               NOT NULL CONSTRAINT DF_Products_IsActive DEFAULT (1),
     CreatedAt       DATETIME2(0)      NOT NULL CONSTRAINT DF_Products_CreatedAt DEFAULT (SYSUTCDATETIME()),
 
-    CONSTRAINT UQ_Products_Sku UNIQUE (Sku)
+    CONSTRAINT UQ_Products_Sku UNIQUE (Sku),
+
+    CONSTRAINT FK_Products_ProductCategories
+        FOREIGN KEY (CategoryId) REFERENCES dbo.ProductCategories(CategoryId)
 );
 GO
 

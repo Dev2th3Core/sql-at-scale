@@ -1,4 +1,4 @@
--- Generates:
+-- Generates(approx):
 --   ~1,000 Orders
 --   ~2,500 OrderItems (avg 2–3 items per order)
 --   ~900 Payments (most orders paid, some pending/cancelled)
@@ -40,30 +40,24 @@ DECLARE @TargetOrders INT = 1000;
 DECLARE @OrderIndex   INT = 1;
 
 ---------------------------------------
--- 3. Helper: random functions
----------------------------------------
--- Returns a random INT between @Min and @Max (inclusive)
-DECLARE @dummy INT; -- just to avoid warning
-
----------------------------------------
--- 4. Main loop: create Orders, Items, Payments
+-- 3. Main loop: create Orders, Items, Payments
 ---------------------------------------
 WHILE @OrderIndex <= @TargetOrders
 BEGIN
     ------------------------
-    -- 4.1 Pick a customer
+    -- 3.1 Pick a customer
     ------------------------
     DECLARE @CustomerId INT =
-        1 + ABS(CHECKSUM(NEWID())) % @CustomerCount; -- assumes CustomerId roughly 1..@CustomerCount
+        1 + ABS(CHECKSUM(NEWID())) % @CustomerCount; -- assumes CustomerId ~ 1..@CustomerCount (OK for seed)
 
     ------------------------
-    -- 4.2 Order date (last 365 days)
+    -- 3.2 Order date (last 365 days)
     ------------------------
     DECLARE @DaysAgo INT = ABS(CHECKSUM(NEWID())) % 365;
     DECLARE @OrderDate DATETIME2(0) = DATEADD(DAY, -@DaysAgo, SYSUTCDATETIME());
 
     ------------------------
-    -- 4.3 Status distribution
+    -- 3.3 Status distribution
     -- We want ~90% of orders to have payments.
     -- Let's define:
     --  50% Paid
@@ -87,7 +81,7 @@ BEGIN
         SET @Status = N'Cancelled';
 
     ------------------------
-    -- 4.4 Create the Order (TotalAmount = 0 for now)
+    -- 3.4 Create the Order (TotalAmount = 0 for now)
     ------------------------
     INSERT INTO dbo.Orders (CustomerId, OrderDate, Status, TotalAmount)
     VALUES (@CustomerId, @OrderDate, @Status, 0);
@@ -95,29 +89,25 @@ BEGIN
     DECLARE @OrderId INT = SCOPE_IDENTITY();
 
     ------------------------
-    -- 4.5 Create OrderItems (2 to 4 items per order)
+    -- 3.5 Create OrderItems (2 to 4 items per order)
     ------------------------
     DECLARE @ItemCount INT = 2 + (ABS(CHECKSUM(NEWID())) % 3); -- 2, 3, or 4
     DECLARE @ItemIndex INT = 1;
 
     WHILE @ItemIndex <= @ItemCount
     BEGIN
-        -- Pick a random product
-        DECLARE @ProductRow INT = 1 + ABS(CHECKSUM(NEWID())) % @ProductCount;
+        -- Pick a random product directly from table (no more 1..@ProductCount assumption)
         DECLARE @ProductId INT;
-
-        -- Assume ProductId roughly 1..@ProductCount
-        -- (Good enough for this stage. In real life we might map row numbers to IDs.)
-        SET @ProductId = @ProductRow;
-
-        -- Get the current unit price of the product
         DECLARE @UnitPrice DECIMAL(18,2);
-        SELECT @UnitPrice = UnitPrice
-        FROM dbo.Products
-        WHERE ProductId = @ProductId;
 
-        -- If somehow product not found (gap in IDs), just skip this item
-        IF @UnitPrice IS NULL
+        SELECT TOP 1
+            @ProductId = p.ProductId,
+            @UnitPrice = p.UnitPrice
+        FROM dbo.Products AS p
+        ORDER BY NEWID();  -- random row
+
+        -- Safety check (unlikely to hit, but good practice)
+        IF @ProductId IS NULL OR @UnitPrice IS NULL
         BEGIN
             SET @ItemIndex += 1;
             CONTINUE;
@@ -133,7 +123,7 @@ BEGIN
     END;
 
     ------------------------
-    -- 4.6 Update Order.TotalAmount from OrderItems
+    -- 3.6 Update Order.TotalAmount from OrderItems
     ------------------------
     DECLARE @TotalAmount DECIMAL(18,2);
 
@@ -146,7 +136,7 @@ BEGIN
     WHERE OrderId = @OrderId;
 
     ------------------------
-    -- 4.7 Create Payment (for most orders)
+    -- 3.7 Create Payment (for most orders)
     -- Rules:
     --   - No payments for Cancelled.
     --   - Payments always for Paid / Shipped / Delivered.
@@ -198,11 +188,12 @@ END;
 GO
 
 ---------------------------------------
--- 5. Sanity checks
+-- 4. Sanity checks
 ---------------------------------------
 PRINT 'Row counts after seeding:';
 SELECT
     (SELECT COUNT(*) FROM dbo.Customers)   AS CustomersCount,
+    (SELECT COUNT(*) FROM dbo.ProductCategories) AS CategoriesCount,
     (SELECT COUNT(*) FROM dbo.Products)    AS ProductsCount,
     (SELECT COUNT(*) FROM dbo.Orders)      AS OrdersCount,
     (SELECT COUNT(*) FROM dbo.OrderItems)  AS OrderItemsCount,
@@ -242,16 +233,15 @@ FROM dbo.Payments p
 ORDER BY p.PaymentId;
 GO
 
-
 -- Quick Count Check
 SELECT COUNT(*) AS TotalOrders
-FROM dbo.Orders
+FROM dbo.Orders;
 GO
 
 SELECT COUNT(*) AS TotalOrderItems
-FROM dbo.OrderItems
+FROM dbo.OrderItems;
 GO
 
 SELECT COUNT(*) AS TotalPayments
-FROM dbo.Payments
+FROM dbo.Payments;
 GO
