@@ -1,5 +1,5 @@
 /****************************************************************************************
-    FILE: usp-cancel-my-order.sql
+    FILE: 07-usp-cancel-my-order.sql
 
     PURPOSE:
         Stored procedure to allow a customer to cancel their own order,

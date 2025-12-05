@@ -1,5 +1,5 @@
 /****************************************************************************************
-    FILE: usp-get-my-orders.sql
+    FILE: 05-usp-get-my-orders.sql
 
     PURPOSE:
         Stored procedure to fetch a paginated "My Orders" list for a logged-in customer.

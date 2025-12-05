@@ -1,5 +1,5 @@
 /****************************************************************************************
-    FILE: usp-get-my-order-details.sql
+    FILE: 06-usp-get-my-order-details.sql
 
     PURPOSE:
         Stored procedure to fetch details for a single order belonging to a
