@@ -1,5 +1,19 @@
-/*
-    Stored Procedure: dbo.usp_GetProductDetails
+/****************************************************************************************
+    FILE: 02-usp-get-product-details.sql
+
+    PURPOSE:
+        Stored procedure to fetch detailed information for a single product,
+        including its category and basic sales statistics (orders, quantity,
+        and revenue) for display on the product details page.
+
+    CONTENTS:
+        1. Procedure: dbo.usp_GetProductDetails
+        2. Example call for manual testing
+*************************************`***************************************************/
+
+/****************************************************************************************
+    2️  STORED PROCEDURE: dbo.usp_GetProductDetails
+    ------------------------------------------------
 
     Scenario:
       Customer opens a specific product page.
@@ -25,7 +39,7 @@
           * TotalRevenue     (sum of LineTotal for this product across all orders)
       - Uses Products + ProductCategories for base info.
       - Uses OrderItems (Stage-01 bonus) for aggregate stats.
-*/
+****************************************************************************************/
 USE OrderManagement;
 GO
 

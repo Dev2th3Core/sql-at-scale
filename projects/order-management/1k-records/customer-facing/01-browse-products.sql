@@ -1,44 +1,60 @@
--- Scenario:
---   Customer opens the products page OR types in a search box.
---   Frontend calls this API with debounced search input and optional filters.
---
--- Inputs:
---   @PageNumber INT                -- 1-based (1 = first page)
---   @PageSize   INT                -- e.g. 10, 20, 50
---   @SearchTerm NVARCHAR(100) = NULL
---       - Optional text search on ProductName or Sku.
---       - If NULL/empty: no search filter.
---
---   @CategoryId INT = NULL
---       - Optional filter.
---       - If provided, only products from this category are returned.
---       - If NULL: no category filter.
---
---   @MinPrice DECIMAL(18,2) = NULL
---       - Optional filter.
---       - If provided, only products with UnitPrice >= MinPrice.
---
---   @MaxPrice DECIMAL(18,2) = NULL
---       - Optional filter.
---       - If provided, only products with UnitPrice <= MaxPrice.
---
---   @TotalCount INT OUTPUT
---       - Total number of products matching filters (without pagination).
---       - Used by backend to compute total pages for UI.
---
--- Behavior:
---   - Returns ACTIVE products only (IsActive = 1).
---   - Optionally filters by:
---       * SearchTerm (ProductName or Sku contains the term)
---       * CategoryId
---       * MinPrice / MaxPrice
---   - Joins ProductCategories to return CategoryName along with CategoryId.
---   - Ordered by newest first (CreatedAt DESC), then ProductName ASC.
---   - Uses OFFSET/FETCH for pagination.
---   - Returns:
---       * Result set for current page.
---       * @TotalCount for pagination metadata.
+/****************************************************************************************
+    FILE: 01-usp-browse-products.sql
 
+    PURPOSE:
+        Stored procedure to power the product listing API.
+        Supports browsing active products with optional search, category and
+        price filters, plus pagination and total count for UI.
+
+    CONTENTS:
+        1. Procedure: dbo.usp_BrowseProducts
+        2. Example calls for manual testing
+****************************************************************************************/
+
+/****************************************************************************************
+    2️  STORED PROCEDURE: dbo.usp_BrowseProducts
+    ------------------------------------------------
+    Scenario:
+      Customer opens the products page OR types in a search box.
+      Frontend calls this API with debounced search input and optional filters.
+
+    Inputs:
+       @PageNumber INT                -- 1-based (1 = first page)
+       @PageSize   INT                -- e.g. 10, 20, 50
+       @SearchTerm NVARCHAR(100) = NULL
+           - Optional text search on ProductName or Sku.
+           - If NULL/empty: no search filter.
+
+       @CategoryId INT = NULL
+           - Optional filter.
+           - If provided, only products from this category are returned.
+           - If NULL: no category filter.
+
+       @MinPrice DECIMAL(18,2) = NULL
+           - Optional filter.
+           - If provided, only products with UnitPrice >= MinPrice.
+
+       @MaxPrice DECIMAL(18,2) = NULL
+           - Optional filter.
+           - If provided, only products with UnitPrice <= MaxPrice.
+
+       @TotalCount INT OUTPUT
+           - Total number of products matching filters (without pagination).
+           - Used by backend to compute total pages for UI.
+
+     Behavior:
+       - Returns ACTIVE products only (IsActive = 1).
+       - Optionally filters by:
+           * SearchTerm (ProductName or Sku contains the term)
+           * CategoryId
+           * MinPrice / MaxPrice
+       - Joins ProductCategories to return CategoryName along with CategoryId.
+       - Ordered by newest first (CreatedAt DESC), then ProductName ASC.
+       - Uses OFFSET/FETCH for pagination.
+       - Returns:
+           * Result set for current page.
+           * @TotalCount for pagination metadata.
+****************************************************************************************/
 USE OrderManagement;
 GO
 
